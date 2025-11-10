@@ -246,9 +246,10 @@ python test_connection.py
 ## 🔬 Research Methodology
 
 ### 1️⃣ **Data Collection**
-- Field visits to deaf schools
-- Analysis of sign language patterns
-- Creation of telehealth-focused dataset
+- Used ASL How to Sign dataset for initial model training
+- Analysis of sign language patterns from the dataset
+- Trained models on ASL dataset for telehealth applications
+- **Future Work:** Collect Sri Lankan Sign Language (SSL) dataset and create localized model
 
 ### 2️⃣ **Model Development**
 - I3D feature extraction from videos
@@ -293,7 +294,7 @@ python test_connection.py
 <td width="50%">
 
 ### 🎯 Short-term Goals
-- ✅ Sinhala Sign Language (SSL) integration
+- 🔄 Sri Lankan Sign Language (SSL) dataset collection and localized model development
 - ✅ Mobile app development
 - ✅ Cloud deployment
 - ✅ Enhanced avatar system
@@ -304,6 +305,7 @@ python test_connection.py
 ### 🚀 Long-term Vision
 - 🌍 Multi-language support
 - 🤖 Advanced AI models
+- 👤 Avatar-based model to convert doctor voice into sign language
 - 📊 Analytics dashboard
 - 🏢 Enterprise solutions
 
