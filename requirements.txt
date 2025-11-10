@@ -1,0 +1,16 @@
+# Doctor-Patient Communication System Requirements
+# This is the main requirements file for the entire project
+
+# Python standard library modules are used for core functionality:
+# - socket (network communication)
+# - threading (concurrent connections)
+# - tkinter (GUI interface)
+# - json (message serialization)
+# - datetime (timestamps)
+
+# No external dependencies required for basic functionality
+
+# Optional enhancements (uncomment if needed):
+# colorama==0.4.6          # For colored console output
+# pillow==10.0.0           # For image handling in messages
+# cryptography==41.0.0     # For message encryption

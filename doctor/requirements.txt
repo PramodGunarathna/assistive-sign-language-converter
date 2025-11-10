@@ -1,0 +1,6 @@
+# Doctor Server Requirements
+# Python standard library modules are used (socket, threading, tkinter, json, datetime)
+# No external dependencies required for basic functionality
+
+sounddevice==0.4.6
+soundfile==0.12.1

@@ -1,0 +1,27 @@
+# Sign Language Recognition System Requirements
+
+# Core ML and Computer Vision
+tensorflow==2.16.1
+opencv-python==4.10.0.84
+mediapipe==0.10.14
+numpy>=1.21.2
+
+# Data Science and ML Utilities
+scikit-learn>=1.4.2
+matplotlib>=3.8.4
+scipy>=1.13.1
+
+# GUI Framework (built-in with Python)
+# tkinter is included with Python standard library
+
+# Additional utilities
+h5py>=3.10.0
+joblib>=1.2.0
+threadpoolctl>=2.0.0
+
+# Gemini AI Integration
+google-generativeai>=0.3.0
+
+# Development and debugging (optional)
+# jupyter>=1.0.0  # For notebook development
+# ipython>=8.0.0  # For interactive development

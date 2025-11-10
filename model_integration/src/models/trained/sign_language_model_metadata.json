@@ -1,0 +1,30 @@
+{
+  "actions": [
+    "I",
+    "a lot",
+    "arm",
+    "back",
+    "child",
+    "cough",
+    "days",
+    "eat",
+    "fever",
+    "football",
+    "go",
+    "have",
+    "headache",
+    "medicine",
+    "need",
+    "pain",
+    "people",
+    "play",
+    "school",
+    "yesterday"
+  ],
+  "sequence_length": 30,
+  "input_shape": [
+    30,
+    1662
+  ],
+  "num_classes": 20
+}

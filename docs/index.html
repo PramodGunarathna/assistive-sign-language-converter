@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Project Images — Gallery</title>
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial; margin:0; padding:24px; background:#f7f9fc; color:#111; }
+    h1 { text-align:center; margin-bottom:8px }
+    p.lead { text-align:center; color:#555; margin-top:0 }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-top:24px }
+    .card { background:white; border-radius:8px; padding:12px; box-shadow:0 4px 12px rgba(20,30,40,0.06); display:flex; flex-direction:column; align-items:center }
+    .card img { max-width:100%; height:auto; border-radius:4px; cursor:pointer }
+    .caption { margin-top:10px; font-size:14px; color:#333 }
+    .meta { color:#666; font-size:13px }
+    footer { text-align:center; margin-top:28px; color:#666 }
+    @media (max-width:420px){ body { padding:12px } }
+  </style>
+</head>
+<body>
+  <h1>Project Images — Gallery</h1>
+  <p class="lead">Quick preview of images used in the README. Click any image to open it in a new tab.</p>
+
+  <div class="grid">
+    <div class="card">
+      <a href="images/system_architecture.png" target="_blank"><img src="images/system_architecture.png" alt="System Architecture"></a>
+      <div class="caption">System Architecture</div>
+      <div class="meta">docs/images/system_architecture.png</div>
+    </div>
+
+    <div class="card">
+      <a href="images/training_loss.png" target="_blank"><img src="images/training_loss.png" alt="Training Loss Curve"></a>
+      <div class="caption">Training Loss Curve</div>
+      <div class="meta">docs/images/training_loss.png</div>
+    </div>
+
+    <div class="card">
+      <a href="images/doctor_interface.png" target="_blank"><img src="images/doctor_interface.png" alt="Doctor Interface"></a>
+      <div class="caption">Doctor Interface Screenshot</div>
+      <div class="meta">docs/images/doctor_interface.png</div>
+    </div>
+
+    <div class="card">
+      <a href="images/patient_interface.png" target="_blank"><img src="images/patient_interface.png" alt="Patient Interface"></a>
+      <div class="caption">Patient Interface Screenshot</div>
+      <div class="meta">docs/images/patient_interface.png</div>
+    </div>
+  </div>
+
+  <footer>
+    <p>To open locally: run <code>python -m http.server 8000</code> inside the <code>docs/</code> folder and visit <a href="http://localhost:8000">http://localhost:8000</a></p>
+    <p><a href="../README.md">Back to README</a></p>
+  </footer>
+</body>
+</html>

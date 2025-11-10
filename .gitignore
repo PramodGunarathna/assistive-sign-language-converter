@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.eggs/
+.env
+.venv
+venv/
+ENV/
+env/
+.Python
+
+# Jupyter
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Data / models (do NOT commit large files)
+*.pth
+*.pt
+*.h5
+*.ckpt
+*.npy
+
+# Docs build
+docs/_build/
+
+# Temporary
+*.tmp
+
+# Ignore secrets
+secrets.env
+
+# If you do want to track models, use Git LFS instead
+# https://git-lfs.github.com/

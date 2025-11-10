@@ -1,0 +1,12 @@
+# Patient Client Requirements
+# Python standard library modules are used (socket, threading, tkinter, json, datetime)
+# No external dependencies required for basic functionality
+
+# Optional: For enhanced GUI styling (uncomment if needed)
+# tkinter-tooltip==2.0.0
+
+# Optional: For better error handling and logging (uncomment if needed)
+# colorama==0.4.6
+
+sounddevice==0.4.6
+soundfile==0.12.1
