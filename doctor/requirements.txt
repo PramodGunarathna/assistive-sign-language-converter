@@ -4,3 +4,6 @@
 
 sounddevice==0.4.6
 soundfile==0.12.1
+
+# Text-to-Speech for reading patient messages
+pyttsx3>=2.90

@@ -60,18 +60,18 @@ class SignLanguageLLMProcessor:
             raise e
         
         # System prompt for sign language context
-        self.system_prompt = """You are an expert assistant for processing sign language recognition outputs. Your task is to convert fragmented or repeated words from sign language recognition into coherent, meaningful sentences with AT LEAST 4 WORDS.
+        self.system_prompt = """You are an expert assistant for processing sign language recognition outputs. Your task is to convert fragmented or repeated words from sign language recognition into coherent, meaningful sentences with EXACTLY 4 TO 5 WORDS (NO MORE, NO LESS).
 
 Examples:
-- "hello hello pain pain" → "Hello, I have severe pain"
-- "doctor help help me" → "Doctor, please help me now"  
-- "head hurt hurt bad" → "My head hurts very badly"
-- "water water drink" → "I need water to drink"
-- "back pain" → "I have severe back pain"
-- "help" → "I need help right now"
+- "hello hello pain pain" → "I have severe pain"
+- "doctor help help me" → "Doctor please help me"  
+- "head hurt hurt bad" → "My head hurts badly"
+- "water water drink" → "I need water now"
+- "back pain" → "I have back pain"
+- "help" → "I need help now"
 
 CRITICAL REQUIREMENTS:
-- ALWAYS generate sentences with AT LEAST 4 WORDS
+- ALWAYS generate sentences with EXACTLY 4 TO 5 WORDS (NO MORE THAN 5 WORDS)
 - Use the provided words as the foundation
 - Add appropriate context words to make meaningful sentences
 - Remove unnecessary repetitions
@@ -79,6 +79,7 @@ CRITICAL REQUIREMENTS:
 - Keep medical terminology accurate
 - Always respond in clear, simple English suitable for medical communication
 - Make sentences sound natural and meaningful
+- NEVER exceed 5 words
 
 Input: {input_text}
 
@@ -106,28 +107,42 @@ Output:"""
             if not cleaned_input:
                 return "No clear message detected"
             
-            # If input is already clean and coherent AND has 4+ words, return as-is
-            if self._is_already_clean(cleaned_input) and len(cleaned_input.split()) >= 4:
+            # If input is already clean and coherent AND has 4-5 words, return as-is (truncate if needed)
+            words = cleaned_input.split()
+            if self._is_already_clean(cleaned_input) and 4 <= len(words) <= 5:
                 return cleaned_input
+            elif self._is_already_clean(cleaned_input) and len(words) > 5:
+                # Truncate to 5 words if already clean but too long
+                return ' '.join(words[:5])
             
             # Use Gemini API to enhance the output
             enhanced_output = self._call_gemini_api(cleaned_input)
             
             if enhanced_output:
-                # Ensure the output has at least 4 words
-                word_count = len(enhanced_output.split())
-                if word_count >= 4:
+                # Ensure the output has 4-5 words (limit to 5 words maximum)
+                words = enhanced_output.split()
+                word_count = len(words)
+                
+                if 4 <= word_count <= 5:
                     self.logger.info(f"SUCCESS: Enhanced output: '{raw_output}' -> '{enhanced_output}'")
                     return enhanced_output
+                elif word_count > 5:
+                    # Truncate to 5 words if too long
+                    truncated = ' '.join(words[:5])
+                    self.logger.info(f"SUCCESS: Truncated output (was {word_count} words): '{raw_output}' -> '{truncated}'")
+                    return truncated
                 else:
                     # If less than 4 words, try to enhance further
                     self.logger.warning(f"Output too short ({word_count} words), trying to enhance further")
                     further_enhanced = self._enhance_short_sentence(enhanced_output)
-                    if further_enhanced and len(further_enhanced.split()) >= 4:
-                        return further_enhanced
-                    else:
-                        # Fallback to basic enhancement
-                        return self._basic_enhance_sentence(cleaned_input)
+                    if further_enhanced:
+                        further_words = further_enhanced.split()
+                        if 4 <= len(further_words) <= 5:
+                            return further_enhanced
+                        elif len(further_words) > 5:
+                            return ' '.join(further_words[:5])
+                    # Fallback to basic enhancement
+                    return self._basic_enhance_sentence(cleaned_input)
             else:
                 # Fallback to enhanced input if API fails
                 self.logger.warning(f"WARNING: API enhancement failed, using enhanced input: '{cleaned_input}'")
@@ -240,7 +255,7 @@ Output:"""
                         prompt,
                         generation_config=genai.types.GenerationConfig(
                             temperature=0.1,
-                            max_output_tokens=50,
+                            max_output_tokens=30,  # Reduced to limit output length (5 words max)
                         )
                     )
                     self.logger.info("API call with config successful")
@@ -311,21 +326,21 @@ Output:"""
     
     def _enhance_short_sentence(self, sentence: str) -> Optional[str]:
         """
-        Enhance a short sentence to make it at least 4 words.
-        
+        Enhance a short sentence to make it 4-5 words.
+
         Args:
             sentence (str): Short sentence to enhance
-            
+
         Returns:
-            Optional[str]: Enhanced sentence or None if failed
+            Optional[str]: Enhanced sentence (4-5 words) or None if failed
         """
         try:
-            enhance_prompt = f"""Please expand this sentence to make it at least 4 words while keeping it meaningful and natural:
+            enhance_prompt = f"""Please expand this sentence to make it EXACTLY 4 TO 5 WORDS (NO MORE, NO LESS) while keeping it meaningful and natural:
 
 Original: "{sentence}"
 
 Requirements:
-- Must be at least 4 words
+- Must be EXACTLY 4 TO 5 WORDS (NO MORE THAN 5 WORDS)
 - Keep the original meaning
 - Add appropriate context
 - Make it sound natural
@@ -333,11 +348,22 @@ Requirements:
 
 Enhanced sentence:"""
             
-            response = self.model.generate_content(enhance_prompt)
+            response = self.model.generate_content(
+                enhance_prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=30,  # Limit to 5 words
+                )
+            )
             if response and response.text:
                 enhanced = response.text.strip()
-                if len(enhanced.split()) >= 4:
+                words = enhanced.split()
+                word_count = len(words)
+                if 4 <= word_count <= 5:
                     return enhanced
+                elif word_count > 5:
+                    # Truncate to 5 words
+                    return ' '.join(words[:5])
             return None
         except Exception as e:
             self.logger.error(f"Error enhancing short sentence: {e}")
@@ -345,45 +371,51 @@ Enhanced sentence:"""
     
     def _basic_enhance_sentence(self, words: str) -> str:
         """
-        Basic enhancement to create 4+ word sentences without API.
-        
+        Basic enhancement to create 4-5 word sentences without API.
+
         Args:
             words (str): Input words
-            
+
         Returns:
-            str: Enhanced sentence with at least 4 words
+            str: Enhanced sentence with 4-5 words (maximum 5 words)
         """
         word_list = words.split()
         
-        # Common enhancement patterns for medical/health context (at least 4 words)
+        # Common enhancement patterns for medical/health context (4-5 words maximum)
         enhancements = {
             "pain": "I have severe pain now",
             "help": "I need help right now",
             "doctor": "I need to see doctor",
-            "water": "I need water to drink",
-            "head": "My head hurts very badly",
-            "back": "I have severe back pain",
-            "hurt": "I am hurt and need help",
-            "sick": "I am feeling very sick",
-            "tired": "I am very tired now",
-            "hungry": "I am hungry and need food"
+            "water": "I need water now",
+            "head": "My head hurts badly",
+            "back": "I have back pain",
+            "hurt": "I am hurt now",
+            "sick": "I am feeling sick",
+            "tired": "I am very tired",
+            "hungry": "I am hungry now"
         }
         
         # Check if any word matches our enhancement patterns
         for word in word_list:
             if word.lower() in enhancements:
-                return enhancements[word.lower()]
+                result = enhancements[word.lower()]
+                # Ensure it's 5 words or less
+                result_words = result.split()
+                if len(result_words) > 5:
+                    return ' '.join(result_words[:5])
+                return result
         
-        # Generic enhancement for any words (ensuring at least 4 words)
+        # Generic enhancement for any words (ensuring 4-5 words maximum)
         if len(word_list) == 1:
-            return f"I need {word_list[0]} right now"
+            return f"I need {word_list[0]} now"
         elif len(word_list) == 2:
-            return f"I have {word_list[0]} and {word_list[1]} now"
+            return f"I have {word_list[0]} {word_list[1]}"
         elif len(word_list) == 3:
-            return f"I am experiencing {word_list[0]}, {word_list[1]}, and {word_list[2]}"
+            return f"I have {word_list[0]} {word_list[1]} {word_list[2]}"
         else:
-            # For longer inputs, add context
-            return f"I am dealing with {' '.join(word_list)} now"
+            # For longer inputs, limit to first 3 words + context (max 5 words total)
+            limited_words = word_list[:3]
+            return f"I have {' '.join(limited_words)}"
     
     def test_connection(self) -> bool:
         """

@@ -43,7 +43,7 @@ echo ==============================================
 echo.
 echo Features:
 echo   - Real-time sign language capture via webcam
-echo   - Automatic translation to text
+echo   - Automatic translation to text (4-5 words max)
 echo   - LLM-enhanced sentence generation
 echo   - Receive doctor's voice and text messages
 echo.
@@ -67,3 +67,4 @@ if %errorlevel% neq 0 (
 
 pause
 endlocal
+

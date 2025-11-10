@@ -19,6 +19,15 @@ try:
     import speech_recognition as sr
 except Exception:
     sr = None
+
+# Text-to-speech for reading patient messages
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except Exception:
+    pyttsx3 = None
+    TTS_AVAILABLE = False
+
 from typing import Dict, List
 
 class DoctorServer:
@@ -29,6 +38,34 @@ class DoctorServer:
         self.clients: Dict[str, socket.socket] = {}
         self.client_names: Dict[str, str] = {}
         self.running = False
+        
+        # Initialize text-to-speech engine
+        self.tts_engine = None
+        self.tts_enabled = True  # Enable TTS by default
+        self.tts_queue = []  # Queue for TTS messages
+        self.tts_lock = threading.Lock()  # Lock for thread-safe queue access
+        self.tts_processing = False  # Flag to track if TTS is currently speaking
+        self.tts_voice_settings = {}  # Store voice settings for reuse
+        self.tts_engine_initialized = False  # Track if engine has been warmed up
+        
+        if TTS_AVAILABLE:
+            try:
+                # Test initialization and get voice settings
+                test_engine = pyttsx3.init()
+                self.tts_voice_settings['rate'] = 150
+                self.tts_voice_settings['volume'] = 0.9
+                # Try to set a better voice (if available)
+                voices = test_engine.getProperty('voices')
+                if voices:
+                    # Prefer female voice if available, otherwise use first available
+                    for voice in voices:
+                        if 'female' in voice.name.lower() or 'zira' in voice.name.lower():
+                            self.tts_voice_settings['voice_id'] = voice.id
+                            break
+                test_engine.stop()  # Clean up test engine
+            except Exception as e:
+                print(f"Warning: Could not initialize TTS engine: {e}")
+                self.tts_voice_settings = {}
         
         # Create GUI
         self.setup_gui()
@@ -88,6 +125,13 @@ class DoctorServer:
                                           command=self.toggle_voice_recognition,
                                           bg='#2c3e50', fg='white', font=('Arial', 10), padx=15, pady=5)
         self.vr_toggle_button.pack(side='left', padx=5)
+        
+        # Text-to-Speech toggle
+        self.tts_toggle_button = tk.Button(voice_frame, text="🔊 TTS: ON" if self.tts_enabled else "🔇 TTS: OFF",
+                                          command=self.toggle_tts,
+                                          bg='#27ae60' if self.tts_enabled else '#95a5a6', 
+                                          fg='white', font=('Arial', 10), padx=15, pady=5)
+        self.tts_toggle_button.pack(side='left', padx=5)
         
         # Connected clients frame
         clients_frame = tk.LabelFrame(self.root, text="Connected Patients", 
@@ -341,7 +385,8 @@ class DoctorServer:
                 self.root.after(0, lambda msg=message_data: self.handle_incoming_message(msg, client_name))
                 
         except Exception as e:
-            self.root.after(0, lambda: self.log_message(f"Error handling client {client_id}: {str(e)}"))
+            error_msg = f"Error handling client {client_id}: {str(e)}"
+            self.root.after(0, lambda msg=error_msg: self.log_message(msg))
         finally:
             # Clean up client connection
             if client_id in self.clients:
@@ -359,6 +404,10 @@ class DoctorServer:
         
         self.messages_text.insert(tk.END, f"[{timestamp}] {client_name}: {message}\n")
         self.messages_text.see(tk.END)
+        
+        # Speak the patient's message using text-to-speech
+        if self.tts_enabled and message and TTS_AVAILABLE:
+            self.speak_message(message, client_name)
         
     def send_message(self, event=None):
         message = self.message_entry.get().strip()
@@ -412,6 +461,116 @@ class DoctorServer:
         self.messages_text.insert(tk.END, f"[{timestamp}] SYSTEM: {message}\n")
         self.messages_text.see(tk.END)
         
+    def speak_message(self, message, speaker_name=None):
+        """Speak the message using text-to-speech with queue system"""
+        if not self.tts_enabled:
+            print("[TTS] TTS is disabled")
+            return
+        if not message:
+            print("[TTS] No message to speak")
+            return
+        if not TTS_AVAILABLE:
+            print("[TTS] TTS not available")
+            return
+        
+        try:
+            # Just speak the message directly, without speaker name prefix
+            text_to_speak = message.strip()
+            
+            if not text_to_speak:
+                print("[TTS] Message is empty after stripping")
+                return
+            
+            print(f"[TTS] Queuing message: {text_to_speak[:50]}...")  # Debug output
+            
+            # Add message to queue
+            with self.tts_lock:
+                self.tts_queue.append(text_to_speak)
+                queue_size = len(self.tts_queue)
+                print(f"[TTS] Queue size: {queue_size}")  # Debug output
+            
+            # Start processing thread if not already running
+            if not self.tts_processing:
+                print("[TTS] Starting TTS processor")  # Debug output
+                self._start_tts_processor()
+            else:
+                print("[TTS] Processor already running")  # Debug output
+            
+        except Exception as e:
+            print(f"Error queuing message for TTS: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _start_tts_processor(self):
+        """Start the TTS processing thread"""
+        # Use a lock to prevent multiple processors from starting
+        with self.tts_lock:
+            if self.tts_processing:
+                return
+            self.tts_processing = True
+        
+        def tts_processor():
+            """Process TTS queue continuously"""
+            while True:
+                try:
+                    # Get next message from queue
+                    with self.tts_lock:
+                        if not self.tts_queue:
+                            self.tts_processing = False
+                            break
+                        text_to_speak = self.tts_queue.pop(0)
+                    
+                    # Create a new engine instance for each message to avoid blocking
+                    try:
+                        import time
+                        print(f"[TTS] Speaking: {text_to_speak[:50]}...")  # Debug output
+                        engine = pyttsx3.init()
+                        # Apply voice settings
+                        if 'rate' in self.tts_voice_settings:
+                            engine.setProperty('rate', self.tts_voice_settings['rate'])
+                        if 'volume' in self.tts_voice_settings:
+                            engine.setProperty('volume', self.tts_voice_settings['volume'])
+                        if 'voice_id' in self.tts_voice_settings:
+                            engine.setProperty('voice', self.tts_voice_settings['voice_id'])
+                        
+                        # Speak the message directly
+                        engine.say(text_to_speak)
+                        engine.runAndWait()
+                        print(f"[TTS] Finished speaking")  # Debug output
+                        engine.stop()  # Clean up
+                        
+                    except Exception as e:
+                        print(f"TTS error speaking message: {e}")
+                        import traceback
+                        traceback.print_exc()
+                    
+                except Exception as e:
+                    print(f"TTS processor error: {e}")
+                    with self.tts_lock:
+                        self.tts_processing = False
+                    break
+            
+            with self.tts_lock:
+                self.tts_processing = False
+        
+        # Start the processor thread
+        tts_thread = threading.Thread(target=tts_processor, daemon=True)
+        tts_thread.start()
+    
+    def toggle_tts(self):
+        """Toggle text-to-speech on/off"""
+        self.tts_enabled = not self.tts_enabled
+        if self.tts_enabled:
+            self.tts_toggle_button.config(text="🔊 TTS: ON", bg='#27ae60')
+            # Clear queue when enabling
+            with self.tts_lock:
+                self.tts_queue.clear()
+        else:
+            self.tts_toggle_button.config(text="🔇 TTS: OFF", bg='#95a5a6')
+            # Clear queue when disabling
+            with self.tts_lock:
+                self.tts_queue.clear()
+    
     def get_local_ip(self):
         """Get the local IP address"""
         try:

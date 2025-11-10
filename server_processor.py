@@ -25,6 +25,14 @@ except ImportError:
     print("WARNING: Gemini integration not available")
     GEMINI_AVAILABLE = False
 
+# Text-to-speech for reading patient translations
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except Exception:
+    pyttsx3 = None
+    TTS_AVAILABLE = False
+
 # Import configuration
 try:
     from config import (
@@ -181,6 +189,36 @@ class SignLanguageServer:
                 self.llm_processor = None
         else:
             print("WARNING: Gemini LLM processor not available")
+        
+        # Initialize text-to-speech engine
+        self.tts_engine = None
+        self.tts_enabled = True  # Enable TTS by default
+        self.tts_queue = []  # Queue for TTS messages
+        self.tts_lock = threading.Lock()  # Lock for thread-safe queue access
+        self.tts_processing = False  # Flag to track if TTS is currently speaking
+        self.tts_voice_settings = {}  # Store voice settings for reuse
+        
+        if TTS_AVAILABLE:
+            try:
+                # Test initialization and get voice settings
+                test_engine = pyttsx3.init()
+                self.tts_voice_settings['rate'] = 150
+                self.tts_voice_settings['volume'] = 0.9
+                # Try to set a better voice (if available)
+                voices = test_engine.getProperty('voices')
+                if voices:
+                    # Prefer female voice if available, otherwise use first available
+                    for voice in voices:
+                        if 'female' in voice.name.lower() or 'zira' in voice.name.lower():
+                            self.tts_voice_settings['voice_id'] = voice.id
+                            break
+                test_engine.stop()  # Clean up test engine
+                print("SUCCESS: Text-to-speech engine initialized")
+            except Exception as e:
+                print(f"WARNING: Could not initialize TTS engine: {e}")
+                self.tts_voice_settings = {}
+        else:
+            print("WARNING: Text-to-speech not available")
         
         # GUI setup first
         self.setup_gui()
@@ -347,6 +385,13 @@ class SignLanguageServer:
                                        font=("Arial", 10, "bold"), fg=llm_color, bg="#ecf0f1")
         self.llm_status_label.pack(pady=2)
         
+        # TTS status label
+        tts_status = "SUCCESS: TTS Enabled" if (self.tts_engine and self.tts_enabled) else "WARNING: TTS Not Available"
+        tts_color = "#27ae60" if (self.tts_engine and self.tts_enabled) else "#f39c12"
+        self.tts_status_label = tk.Label(status_frame, text=f"TTS Status: {tts_status}", 
+                                       font=("Arial", 10, "bold"), fg=tts_color, bg="#ecf0f1")
+        self.tts_status_label.pack(pady=2)
+        
         # Main content frame with messages and voice
         main_content_frame = tk.Frame(self.root, bg="#f0f0f0")
         main_content_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
@@ -436,8 +481,14 @@ class SignLanguageServer:
                                         relief=tk.RAISED, bd=5, padx=30, pady=10)
         self.stop_record_button.pack(pady=5)
         self.stop_record_button.config(state=tk.DISABLED)  # Disabled initially
-            
         
+        # TTS Toggle Button
+        self.tts_toggle_button = tk.Button(center_buttons, text="🔊 TTS: ON" if self.tts_enabled else "🔇 TTS: OFF",
+                                          command=self.toggle_tts,
+                                          font=("Arial", 14, "bold"), 
+                                          bg="#27ae60" if self.tts_enabled else "#95a5a6", 
+                                          fg="white", relief=tk.RAISED, bd=3, padx=20, pady=10)
+        self.tts_toggle_button.pack(pady=5)
         
         # Right side buttons
         right_buttons = tk.Frame(button_frame, bg="#f0f0f0")
@@ -823,6 +874,93 @@ class SignLanguageServer:
         except Exception as e:
             print(f"Error updating LLM status: {e}")
     
+    def speak_message(self, message):
+        """Speak the message using text-to-speech with queue system"""
+        if not self.tts_enabled or not message or not TTS_AVAILABLE:
+            return
+        
+        try:
+            # Clean the message (remove extra spaces, etc.)
+            clean_message = message.strip()
+            if not clean_message:
+                return
+            
+            # Add message to queue
+            with self.tts_lock:
+                self.tts_queue.append(clean_message)
+            
+            # Start processing thread if not already running
+            if not self.tts_processing:
+                self._start_tts_processor()
+            
+        except Exception as e:
+            print(f"Error queuing message for TTS: {e}")
+    
+    def _start_tts_processor(self):
+        """Start the TTS processing thread"""
+        if self.tts_processing:
+            return
+        
+        def tts_processor():
+            """Process TTS queue continuously"""
+            self.tts_processing = True
+            while True:
+                try:
+                    # Get next message from queue
+                    with self.tts_lock:
+                        if not self.tts_queue:
+                            self.tts_processing = False
+                            break
+                        text_to_speak = self.tts_queue.pop(0)
+                    
+                    # Create a new engine instance for each message to avoid blocking
+                    try:
+                        engine = pyttsx3.init()
+                        # Apply voice settings
+                        if 'rate' in self.tts_voice_settings:
+                            engine.setProperty('rate', self.tts_voice_settings['rate'])
+                        if 'volume' in self.tts_voice_settings:
+                            engine.setProperty('volume', self.tts_voice_settings['volume'])
+                        if 'voice_id' in self.tts_voice_settings:
+                            engine.setProperty('voice', self.tts_voice_settings['voice_id'])
+                        
+                        # Speak the message
+                        engine.say(text_to_speak)
+                        engine.runAndWait()
+                        engine.stop()  # Clean up
+                        
+                    except Exception as e:
+                        print(f"TTS error speaking message: {e}")
+                    
+                except Exception as e:
+                    print(f"TTS processor error: {e}")
+                    break
+            
+            self.tts_processing = False
+        
+        # Start the processor thread
+        tts_thread = threading.Thread(target=tts_processor, daemon=True)
+        tts_thread.start()
+    
+    def toggle_tts(self):
+        """Toggle text-to-speech on/off"""
+        self.tts_enabled = not self.tts_enabled
+        if self.tts_enabled:
+            self.tts_toggle_button.config(text="🔊 TTS: ON", bg="#27ae60")
+            # Clear queue when enabling
+            with self.tts_lock:
+                self.tts_queue.clear()
+            # Update status label
+            if hasattr(self, 'tts_status_label'):
+                self.tts_status_label.config(text="TTS Status: SUCCESS: TTS Enabled", fg="#27ae60")
+        else:
+            self.tts_toggle_button.config(text="🔇 TTS: OFF", bg="#95a5a6")
+            # Clear queue when disabling
+            with self.tts_lock:
+                self.tts_queue.clear()
+            if hasattr(self, 'tts_status_label'):
+                self.tts_status_label.config(text="TTS Status: TTS Disabled", fg="#95a5a6")
+    
     def add_prediction(self, prediction, timestamp=None):
         """Add a new prediction to the display."""
         try:
@@ -834,6 +972,10 @@ class SignLanguageServer:
                 self.root.update()
             else:
                 print(f"Prediction: {prediction}")  # Fallback to console
+            
+            # Speak the prediction using text-to-speech
+            if self.tts_enabled and prediction and self.tts_engine:
+                self.speak_message(prediction)
         except Exception as e:
             print(f"Error adding prediction: {e}")
             print(f"Prediction: {prediction}")
