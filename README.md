@@ -42,20 +42,6 @@
 
 ---
 
-## 👥 Team
-
-<div align="center">
-
-### 🎓 Authors
-**GUNARATHNA L.P.N.** (2020/E/046) • **SOMARATHNA S.V.A.P.K.** (2020/E/212)
-
-### 👨‍🏫 Supervisors
-**Dr. T. Mukunthan** • **Prof. M. K. Ahilan** • **Mr. R. Valluvan**  
-*Department of Electrical and Electronic Engineering, University of Jaffna*
-
-</div>
-
----
 
 ## 🎬 System in Action
 
@@ -253,8 +239,9 @@ python test_connection.py
 
 ### 2️⃣ **Model Development**
 - I3D feature extraction from videos
-- Transformer-based architecture design
 - LSTM temporal modeling integration
+- Transformer-based architecture design
+
 
 ### 3️⃣ **System Integration**
 - Real-time video processing pipeline
@@ -262,10 +249,8 @@ python test_connection.py
 - Voice-to-text feedback system
 
 ### 4️⃣ **Validation**
-- Clinical trials in healthcare settings
 - Performance metric evaluation
-- User satisfaction assessment
-
+  
 ---
 
 ## 🎯 Key Features
@@ -279,8 +264,7 @@ python test_connection.py
 | 🧠 **Deep Learning** | State-of-the-art AI models | ✅ |
 | 🏥 **Healthcare Focus** | Medical terminology support | ✅ |
 | 📱 **User-friendly** | Intuitive interfaces | ✅ |
-| 🔒 **Secure** | Encrypted communication | ✅ |
-| ⚡ **Low Latency** | <150ms response time | ✅ |
+| ⚡ **Low Latency** | < 2s response time | ✅ |
 | 🌐 **Scalable** | Cloud-ready architecture | 🔄 |
 
 </div>
@@ -367,25 +351,15 @@ We welcome contributions! Here's how you can help:
 <div align="center">
 
 **Questions or suggestions?**
-
-📧 Email: [pramodnadishka.l@gmail.com](mailto:pramodnadishka.l@gmail.com)  
+ 
 🔗 Project Link: [https://github.com/PramodGunarathna/assistive-sign-language-converter](https://github.com/PramodGunarathna/assistive-sign-language-converter)
 
 </div>
 
 ---
 
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 <div align="center">
-
-### 🌟 If you find this project helpful, please give it a star! 🌟
-
-**Made with ❤️ by the University of Jaffna Team**
 
 ![Visitors](https://visitor-badge.laobi.icu/badge?page_id=yourusername.sign-language-converter)
 
