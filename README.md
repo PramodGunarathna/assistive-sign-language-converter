@@ -93,15 +93,14 @@ graph LR
 
 | Model Architecture | Train Score | Validation | Test Score | Status |
 |:------------------:|:-----------:|:----------:|:----------:|:------:|
-| 🔵 **T5 Decoder** | 0.0137 | 0.0133 | 0.0129 | ✅ Good |
-| 🟡 **LSTM** | 0.0388 | 0.0299 | 0.0312 | ✅ Better |
+| 🔵 **T5 Decoder** | 0.0137 | 0.0133 | 0.0129 | - |
+| 🟡 **LSTM** | 0.0388 | 0.0299 | 0.0312 | - |
 | 🟢 **Transformer** | **0.0689** | **0.0459** | **0.0478** | 🏆 **Best** |
 
 ### Training Progress
 ![Training Loss Curve](docs/images/training_loss.png)
 
-### Feature Extraction Visualization
-![Feature Visualization](docs/images/feature_viz.png)
+
 
 </div>
 
